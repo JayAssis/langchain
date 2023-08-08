@@ -122,7 +122,7 @@ class MosaicML(LLM):
         prompt = self._transform_prompt(prompt)
 
         payload = {"inputs": [prompt]}
-        payload.update(_model_kwargs)
+        payload |= _model_kwargs
         payload.update(kwargs)
 
         # HTTP headers for authorization
@@ -169,10 +169,7 @@ class MosaicML(LLM):
                         f"No valid key ({', '.join(output_keys)}) in response:"
                         f" {parsed_response}"
                     )
-                if isinstance(output_item, list):
-                    text = output_item[0]
-                else:
-                    text = output_item
+                text = output_item[0] if isinstance(output_item, list) else output_item
             elif isinstance(parsed_response, list):
                 first_item = parsed_response[0]
                 if isinstance(first_item, str):

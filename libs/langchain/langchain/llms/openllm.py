@@ -267,9 +267,8 @@ class OpenLLM(LLM):
         )
         if self._client:
             return self._client.query(prompt, **config.model_dump(flatten=True))
-        else:
-            assert self._runner is not None
-            return self._runner(prompt, **config.model_dump(flatten=True))
+        assert self._runner is not None
+        return self._runner(prompt, **config.model_dump(flatten=True))
 
     async def _acall(
         self,
@@ -295,16 +294,15 @@ class OpenLLM(LLM):
             return await self._client.acall(
                 "generate", prompt, **config.model_dump(flatten=True)
             )
-        else:
-            assert self._runner is not None
-            (
-                prompt,
-                generate_kwargs,
-                postprocess_kwargs,
-            ) = self._runner.llm.sanitize_parameters(prompt, **kwargs)
-            generated_result = await self._runner.generate.async_run(
-                prompt, **generate_kwargs
-            )
-            return self._runner.llm.postprocess_generate(
-                prompt, generated_result, **postprocess_kwargs
-            )
+        assert self._runner is not None
+        (
+            prompt,
+            generate_kwargs,
+            postprocess_kwargs,
+        ) = self._runner.llm.sanitize_parameters(prompt, **kwargs)
+        generated_result = await self._runner.generate.async_run(
+            prompt, **generate_kwargs
+        )
+        return self._runner.llm.postprocess_generate(
+            prompt, generated_result, **postprocess_kwargs
+        )

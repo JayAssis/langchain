@@ -230,7 +230,7 @@ class AmazonTextractPDFParser(BaseBlobParser):
         current_text = ""
         current_page = 1
         for block in textract_response_json["Blocks"]:
-            if "Page" in block and not (int(block["Page"]) == current_page):
+            if "Page" in block and int(block["Page"]) != current_page:
                 yield Document(
                     page_content=current_text,
                     metadata={"source": blob.source, "page": current_page},

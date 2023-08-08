@@ -52,22 +52,14 @@ def parse_json_markdown(json_string: str) -> dict:
     match = re.search(r"```(json)?(.*)```", json_string, re.DOTALL)
 
     # If no match found, assume the entire string is a JSON string
-    if match is None:
-        json_str = json_string
-    else:
-        # If match found, use the content within the backticks
-        json_str = match.group(2)
-
+    json_str = json_string if match is None else match[2]
     # Strip whitespace and newlines from the start and end
     json_str = json_str.strip()
 
     # handle newlines and other special characters inside the returned value
     json_str = _custom_parser(json_str)
 
-    # Parse the JSON string into a Python dictionary
-    parsed = json.loads(json_str)
-
-    return parsed
+    return json.loads(json_str)
 
 
 def parse_and_check_json_markdown(text: str, expected_keys: List[str]) -> dict:

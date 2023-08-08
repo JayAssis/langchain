@@ -41,10 +41,9 @@ def _create_retry_decorator(llm: VertexAI) -> Callable[[Any], Any]:
         google.api_core.exceptions.Aborted,
         google.api_core.exceptions.DeadlineExceeded,
     ]
-    decorator = create_base_retry_decorator(
+    return create_base_retry_decorator(
         error_types=errors, max_retries=llm.max_retries  # type: ignore
     )
-    return decorator
 
 
 def completion_with_retry(llm: VertexAI, *args: Any, **kwargs: Any) -> Any:
@@ -118,9 +117,7 @@ class _VertexAICommon(BaseModel):
     def _enforce_stop_words(self, text: str, stop: Optional[List[str]] = None) -> str:
         if stop is None and self.stop is not None:
             stop = self.stop
-        if stop:
-            return enforce_stop_tokens(text, stop)
-        return text
+        return enforce_stop_tokens(text, stop) if stop else text
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:
@@ -160,15 +157,18 @@ class VertexAI(_VertexAICommon, LLM):
         tuned_model_name = values.get("tuned_model_name")
         model_name = values["model_name"]
         try:
-            if tuned_model_name or not is_codey_model(model_name):
+            if (
+                tuned_model_name
+                or not tuned_model_name
+                and not is_codey_model(model_name)
+            ):
                 from vertexai.preview.language_models import TextGenerationModel
 
-                if tuned_model_name:
-                    values["client"] = TextGenerationModel.get_tuned_model(
-                        tuned_model_name
-                    )
-                else:
-                    values["client"] = TextGenerationModel.from_pretrained(model_name)
+                values["client"] = (
+                    TextGenerationModel.get_tuned_model(tuned_model_name)
+                    if tuned_model_name
+                    else TextGenerationModel.from_pretrained(model_name)
+                )
             else:
                 from vertexai.preview.language_models import CodeGenerationModel
 

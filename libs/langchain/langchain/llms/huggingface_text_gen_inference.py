@@ -155,11 +155,10 @@ class HuggingFaceTextGenInference(LLM):
         **kwargs: Any,
     ) -> str:
         if self.streaming:
-            completion = ""
-            for chunk in self._stream(prompt, stop, run_manager, **kwargs):
-                completion += chunk.text
-            return completion
-
+            return "".join(
+                chunk.text
+                for chunk in self._stream(prompt, stop, run_manager, **kwargs)
+            )
         invocation_params = self._invocation_params(stop, **kwargs)
         res = self.client.generate(prompt, **invocation_params)
         # remove stop sequences from the end of the generated text

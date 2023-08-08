@@ -30,9 +30,7 @@ class OutputFunctionsParser(BaseGenerationOutputParser[Any]):
         except KeyError as exc:
             raise OutputParserException(f"Could not parse function call: {exc}")
 
-        if self.args_only:
-            return func_call["arguments"]
-        return func_call
+        return func_call["arguments"] if self.args_only else func_call
 
 
 class JsonOutputFunctionsParser(OutputFunctionsParser):
@@ -85,12 +83,10 @@ class PydanticOutputFunctionsParser(OutputFunctionsParser):
     def parse_result(self, result: List[Generation]) -> Any:
         _result = super().parse_result(result)
         if self.args_only:
-            pydantic_args = self.pydantic_schema.parse_raw(_result)  # type: ignore
-        else:
-            fn_name = _result["name"]
-            _args = _result["arguments"]
-            pydantic_args = self.pydantic_schema[fn_name].parse_raw(_args)  # type: ignore  # noqa: E501
-        return pydantic_args
+            return self.pydantic_schema.parse_raw(_result)
+        fn_name = _result["name"]
+        _args = _result["arguments"]
+        return self.pydantic_schema[fn_name].parse_raw(_args)
 
 
 class PydanticAttrOutputFunctionsParser(PydanticOutputFunctionsParser):

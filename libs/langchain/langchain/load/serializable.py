@@ -54,7 +54,7 @@ class Serializable(BaseModel, ABC):
         Return a map of constructor argument names to secret ids.
         eg. {"openai_api_key": "OPENAI_API_KEY"}
         """
-        return dict()
+        return {}
 
     @property
     def lc_attributes(self) -> Dict:
@@ -78,7 +78,7 @@ class Serializable(BaseModel, ABC):
         if not self.lc_serializable:
             return self.to_json_not_implemented()
 
-        secrets = dict()
+        secrets = {}
         # Get latest values for kwargs if there is an attribute with same name
         lc_kwargs = {
             k: getattr(self, k, v)
@@ -95,15 +95,15 @@ class Serializable(BaseModel, ABC):
             # Get a reference to self bound to each class in the MRO
             this = cast(Serializable, self if cls is None else super(cls, self))
 
-            secrets.update(this.lc_secrets)
-            lc_kwargs.update(this.lc_attributes)
+            secrets |= this.lc_secrets
+            lc_kwargs |= this.lc_attributes
 
         # include all secrets, even if not specified in kwargs
         # as these secrets may be passed as an environment variable instead
-        for key in secrets.keys():
+        for key in secrets:
             secret_value = getattr(self, key, None) or lc_kwargs.get(key)
             if secret_value is not None:
-                lc_kwargs.update({key: secret_value})
+                lc_kwargs[key] = secret_value
 
         return {
             "lc": 1,

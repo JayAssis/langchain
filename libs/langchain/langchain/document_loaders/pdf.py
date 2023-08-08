@@ -73,7 +73,9 @@ class BasePDFLoader(BaseLoader, ABC):
             self.file_path = os.path.expanduser(self.file_path)
 
         # If the file is a web path or S3, download it to a temporary file, and use that
-        if not os.path.isfile(self.file_path) and self._is_valid_url(self.file_path):
+        if not os.path.isfile(self.file_path):
+            if not self._is_valid_url(self.file_path):
+                raise ValueError(f"File path {self.file_path} is not a valid file or url")
             self.temp_dir = tempfile.TemporaryDirectory()
             _, suffix = os.path.splitext(self.file_path)
             temp_pdf = os.path.join(self.temp_dir.name, f"tmp{suffix}")
@@ -84,16 +86,13 @@ class BasePDFLoader(BaseLoader, ABC):
 
                 if r.status_code != 200:
                     raise ValueError(
-                        "Check the url of your file; returned status code %s"
-                        % r.status_code
+                        f"Check the url of your file; returned status code {r.status_code}"
                     )
 
                 self.web_path = self.file_path
                 with open(temp_pdf, mode="wb") as f:
                     f.write(r.content)
                 self.file_path = str(temp_pdf)
-        elif not os.path.isfile(self.file_path):
-            raise ValueError("File path %s is not a valid file or url" % self.file_path)
 
     def __del__(self) -> None:
         if hasattr(self, "temp_dir"):
@@ -110,9 +109,7 @@ class BasePDFLoader(BaseLoader, ABC):
         """check if the url is S3"""
         try:
             result = urlparse(url)
-            if result.scheme == "s3" and result.netloc:
-                return True
-            return False
+            return bool(result.scheme == "s3" and result.netloc)
         except ValueError:
             return False
 
@@ -366,8 +363,7 @@ class MathpixPDFLoader(BasePDFLoader):
             )
         response_data = response.json()
         if "pdf_id" in response_data:
-            pdf_id = response_data["pdf_id"]
-            return pdf_id
+            return response_data["pdf_id"]
         else:
             raise ValueError("Unable to send PDF to Mathpix.")
 
@@ -379,7 +375,7 @@ class MathpixPDFLoader(BasePDFLoader):
 
         Returns: None
         """
-        url = self.url + "/" + pdf_id
+        url = f"{self.url}/{pdf_id}"
         for _ in range(0, self.max_wait_time_seconds, 5):
             response = requests.get(url, headers=self.headers)
             response_data = response.json()
@@ -414,14 +410,12 @@ class MathpixPDFLoader(BasePDFLoader):
         )
         # replace \section{Title} with # Title
         contents = contents.replace("\\section{", "# ").replace("}", "")
-        # replace the "\" slash that Mathpix adds to escape $, %, (, etc.
-        contents = (
+        return (
             contents.replace(r"\$", "$")
             .replace(r"\%", "%")
             .replace(r"\(", "(")
             .replace(r"\)", ")")
         )
-        return contents
 
     def load(self) -> List[Document]:
         pdf_id = self.send_pdf()
@@ -588,11 +582,8 @@ class AmazonTextractPDFLoader(BasePDFLoader):
                 pdf_reader = pypdf.PdfReader(input_pdf_file)
                 return len(pdf_reader.pages)
         elif blob.mimetype == "image/tiff":
-            num_pages = 0
             img = Image.open(blob.as_bytes())
-            for _, _ in enumerate(ImageSequence.Iterator(img)):
-                num_pages += 1
-            return num_pages
+            return sum(1 for _ in ImageSequence.Iterator(img))
         elif blob.mimetype in ["image/png", "image/jpeg"]:
             return 1
         else:

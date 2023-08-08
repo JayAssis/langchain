@@ -144,7 +144,7 @@ class LlamaCpp(LLM):
         if values["n_gpu_layers"] is not None:
             model_params["n_gpu_layers"] = values["n_gpu_layers"]
 
-        model_params.update(values["model_kwargs"])
+        model_params |= values["model_kwargs"]
 
         try:
             from llama_cpp import Llama
@@ -248,20 +248,16 @@ class LlamaCpp(LLM):
                 llm("This is a prompt.")
         """
         if self.streaming:
-            # If streaming is enabled, we use the stream
-            # method that yields as they are generated
-            # and return the combined strings from the first choices's text:
-            combined_text_output = ""
-            for chunk in self._stream(
-                prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
-            ):
-                combined_text_output += chunk.text
-            return combined_text_output
-        else:
-            params = self._get_parameters(stop)
-            params = {**params, **kwargs}
-            result = self.client(prompt=prompt, **params)
-            return result["choices"][0]["text"]
+            return "".join(
+                chunk.text
+                for chunk in self._stream(
+                    prompt=prompt, stop=stop, run_manager=run_manager, **kwargs
+                )
+            )
+        params = self._get_parameters(stop)
+        params = {**params, **kwargs}
+        result = self.client(prompt=prompt, **params)
+        return result["choices"][0]["text"]
 
     def _stream(
         self,
