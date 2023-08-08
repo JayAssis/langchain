@@ -48,7 +48,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         self.collection.create_index("SessionId")
 
     @property
-    def messages(self) -> List[BaseMessage]:  # type: ignore
+    def messages(self) -> List[BaseMessage]:    # type: ignore
         """Retrieve the messages from MongoDB"""
         from pymongo import errors
 
@@ -62,8 +62,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         else:
             items = []
 
-        messages = messages_from_dict(items)
-        return messages
+        return messages_from_dict(items)
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in MongoDB"""

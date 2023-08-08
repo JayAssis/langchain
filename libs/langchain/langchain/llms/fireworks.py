@@ -89,8 +89,7 @@ class BaseFireworks(BaseLLM):
         Returns:
             The full LLM output.
         """
-        params = {"model": self.model_id}
-        params = {**params, **kwargs}
+        params = {"model": self.model_id} | kwargs
         sub_prompts = self.get_batch_prompts(params, prompts, stop)
         choices = []
         token_usage: Dict[str, int] = {}
@@ -110,8 +109,7 @@ class BaseFireworks(BaseLLM):
         **kwargs: Any,
     ) -> LLMResult:
         """Call out to Fireworks endpoint async with k unique prompts."""
-        params = {"model": self.model_id}
-        params = {**params, **kwargs}
+        params = {"model": self.model_id} | kwargs
         sub_prompts = self.get_batch_prompts(params, prompts, stop)
         choices = []
         token_usage: Dict[str, int] = {}
@@ -134,11 +132,10 @@ class BaseFireworks(BaseLLM):
             if "stop" in params:
                 raise ValueError("`stop` found in both the input and default params.")
 
-        sub_prompts = [
+        return [
             prompts[i : i + self.batch_size]
             for i in range(0, len(prompts), self.batch_size)
         ]
-        return sub_prompts
 
     def create_llm_result(
         self, choices: Any, prompts: List[str], token_usage: Dict[str, int]
@@ -315,10 +312,10 @@ def completion_with_retry(
     llm: Union[BaseFireworks, FireworksChat], **kwargs: Any
 ) -> Any:
     """Use tenacity to retry the completion call."""
-    if "prompt" not in kwargs.keys():
-        answers = []
-        for i in range(len(kwargs["messages"])):
-            result = kwargs["messages"][i]["content"]
+    answers = []
+    if "prompt" in kwargs:
+        for i in range(len(kwargs["prompt"])):
+            result = kwargs["prompt"][i]
             result = execute(
                 result,
                 kwargs["model"],
@@ -330,9 +327,8 @@ def completion_with_retry(
             curr_string = json.loads(result)["choices"][0]["text"]
             answers.append(curr_string)
     else:
-        answers = []
-        for i in range(len(kwargs["prompt"])):
-            result = kwargs["prompt"][i]
+        for i in range(len(kwargs["messages"])):
+            result = kwargs["messages"][i]["content"]
             result = execute(
                 result,
                 kwargs["model"],
@@ -350,10 +346,10 @@ async def acompletion_with_retry(
     llm: Union[BaseFireworks, FireworksChat], **kwargs: Any
 ) -> Any:
     """Use tenacity to retry the async completion call."""
-    if "prompt" not in kwargs.keys():
-        answers = []
-        for i in range(len(kwargs["messages"])):
-            result = kwargs["messages"][i]["content"]
+    answers = []
+    if "prompt" in kwargs:
+        for i in range(len(kwargs["prompt"])):
+            result = kwargs["prompt"][i]
             result = execute(
                 result,
                 kwargs["model"],
@@ -364,9 +360,8 @@ async def acompletion_with_retry(
             curr_string = json.loads(result)["choices"][0]["text"]
             answers.append(curr_string)
     else:
-        answers = []
-        for i in range(len(kwargs["prompt"])):
-            result = kwargs["prompt"][i]
+        for i in range(len(kwargs["messages"])):
+            result = kwargs["messages"][i]["content"]
             result = execute(
                 result,
                 kwargs["model"],

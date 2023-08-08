@@ -40,7 +40,7 @@ class CassandraChatMessageHistory(BaseChatMessageHistory):
     ) -> None:
         try:
             from cassio.history import StoredBlobHistory
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             raise ImportError(
                 "Could not import cassio python package. "
                 "Please install it with `pip install cassio`."
@@ -50,14 +50,13 @@ class CassandraChatMessageHistory(BaseChatMessageHistory):
         self.blob_history = StoredBlobHistory(session, keyspace, table_name)
 
     @property
-    def messages(self) -> List[BaseMessage]:  # type: ignore
+    def messages(self) -> List[BaseMessage]:    # type: ignore
         """Retrieve all session messages from DB"""
         message_blobs = self.blob_history.retrieve(
             self.session_id,
         )
         items = [json.loads(message_blob) for message_blob in message_blobs]
-        messages = messages_from_dict(items)
-        return messages
+        return messages_from_dict(items)
 
     def add_message(self, message: BaseMessage) -> None:
         """Write a message to the table"""

@@ -150,6 +150,4 @@ class Minimax(LLM):
         request = self._default_params
         request["messages"] = [{"sender_type": "USER", "text": prompt}]
         request.update(kwargs)
-        response = self._client.post(request)
-
-        return response
+        return self._client.post(request)

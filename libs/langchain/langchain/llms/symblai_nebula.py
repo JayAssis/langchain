@@ -86,7 +86,7 @@ class Nebula(LLM):
         if nebula_service_url.endswith("/"):
             nebula_service_url = nebula_service_url[:-1]
         if not nebula_service_path.startswith("/"):
-            nebula_service_path = "/" + nebula_service_path
+            nebula_service_path = f"/{nebula_service_path}"
 
         """ TODO: Future login"""
         """

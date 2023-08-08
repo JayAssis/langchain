@@ -135,19 +135,16 @@ class Xinference(LLM):
             generate_config["stop"] = stop
 
         if generate_config and generate_config.get("stream"):
-            combined_text_output = ""
-            for token in self._stream_generate(
-                model=model,
-                prompt=prompt,
-                run_manager=run_manager,
-                generate_config=generate_config,
-            ):
-                combined_text_output += token
-            return combined_text_output
-
-        else:
-            completion = model.generate(prompt=prompt, generate_config=generate_config)
-            return completion["choices"][0]["text"]
+            return "".join(
+                self._stream_generate(
+                    model=model,
+                    prompt=prompt,
+                    run_manager=run_manager,
+                    generate_config=generate_config,
+                )
+            )
+        completion = model.generate(prompt=prompt, generate_config=generate_config)
+        return completion["choices"][0]["text"]
 
     def _stream_generate(
         self,
@@ -172,8 +169,7 @@ class Xinference(LLM):
         )
         for chunk in streaming_response:
             if isinstance(chunk, dict):
-                choices = chunk.get("choices", [])
-                if choices:
+                if choices := chunk.get("choices", []):
                     choice = choices[0]
                     if isinstance(choice, dict):
                         token = choice.get("text", "")

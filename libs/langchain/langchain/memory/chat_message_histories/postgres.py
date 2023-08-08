@@ -45,15 +45,14 @@ class PostgresChatMessageHistory(BaseChatMessageHistory):
         self.connection.commit()
 
     @property
-    def messages(self) -> List[BaseMessage]:  # type: ignore
+    def messages(self) -> List[BaseMessage]:    # type: ignore
         """Retrieve the messages from PostgreSQL"""
         query = (
             f"SELECT message FROM {self.table_name} WHERE session_id = %s ORDER BY id;"
         )
         self.cursor.execute(query, (self.session_id,))
         items = [record["message"] for record in self.cursor.fetchall()]
-        messages = messages_from_dict(items)
-        return messages
+        return messages_from_dict(items)
 
     def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in PostgreSQL"""

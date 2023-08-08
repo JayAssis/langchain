@@ -203,10 +203,7 @@ class SQLiteEntityStore(BaseEntityStore):
         """
         cursor = self.conn.execute(query, (key,))
         result = cursor.fetchone()
-        if result is not None:
-            value = result[0]
-            return value
-        return default
+        return result[0] if result is not None else default
 
     def set(self, key: str, value: Optional[str]) -> None:
         if not value:
@@ -327,24 +324,15 @@ class ConversationEntityMemory(BaseChatMemory):
             # Make a list of the extracted entities:
             entities = [w.strip() for w in output.split(",")]
 
-        # Make a dictionary of entities with summary if exists:
-        entity_summaries = {}
-
-        for entity in entities:
-            entity_summaries[entity] = self.entity_store.get(entity, "")
-
+        entity_summaries = {
+            entity: self.entity_store.get(entity, "") for entity in entities
+        }
         # Replaces the entity name cache with the most recently discussed entities,
         # or if no entities were extracted, clears the cache:
         self.entity_cache = entities
 
         # Should we return as message objects or as a string?
-        if self.return_messages:
-            # Get last `k` pair of chat messages:
-            buffer: Any = self.buffer[-self.k * 2 :]
-        else:
-            # Reuse the string we made earlier:
-            buffer = buffer_string
-
+        buffer = self.buffer[-self.k * 2 :] if self.return_messages else buffer_string
         return {
             self.chat_history_key: buffer,
             "entities": entity_summaries,

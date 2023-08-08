@@ -216,19 +216,19 @@ class Tongyi(LLM):
             if len(prompts) > 1:
                 raise ValueError("Cannot stream results with multiple prompts.")
             params["stream"] = True
-            for stream_resp in stream_generate_with_retry(
-                self, prompt=prompts[0], **params
-            ):
-                generations.append(
-                    [
-                        Generation(
-                            text=stream_resp["output"]["text"],
-                            generation_info=dict(
-                                finish_reason=stream_resp["output"]["finish_reason"],
-                            ),
-                        )
-                    ]
+            generations.extend(
+                [
+                    Generation(
+                        text=stream_resp["output"]["text"],
+                        generation_info=dict(
+                            finish_reason=stream_resp["output"]["finish_reason"],
+                        ),
+                    )
+                ]
+                for stream_resp in stream_generate_with_retry(
+                    self, prompt=prompts[0], **params
                 )
+            )
         else:
             for prompt in prompts:
                 completion = generate_with_retry(

@@ -91,21 +91,15 @@ class RecursiveUrlLoader(BaseLoader):
             if link.startswith("//"):
                 absolute_paths.append(f"{urlparse(base_url).scheme}:{link}")
                 continue
-        # Remove duplicates
-        # also do another filter to prevent outside links
-        absolute_paths = list(
-            set(
-                [
-                    path
-                    for path in absolute_paths
-                    if not self.prevent_outside
-                    or path.startswith(base_url)
-                    and path != base_url
-                ]
-            )
+        return list(
+            {
+                path
+                for path in absolute_paths
+                if not self.prevent_outside
+                or path.startswith(base_url)
+                and path != base_url
+            }
         )
-
-        return absolute_paths
 
     def _gen_metadata(self, raw_html: str, url: str) -> dict:
         """Build metadata from BeautifulSoup output."""
@@ -170,11 +164,10 @@ class RecursiveUrlLoader(BaseLoader):
                 except Exception:
                     # unreachable link, so just ignore it
                     continue
-                loaded_link = Document(
+                yield Document(
                     page_content=self.extractor(text),
                     metadata=self._gen_metadata(text, link),
                 )
-                yield loaded_link
                 # If the link is a directory (w/ children) then visit it
                 if link.endswith("/"):
                     yield from self._get_child_links_recursive(link, visited, depth + 1)
@@ -296,14 +289,10 @@ class RecursiveUrlLoader(BaseLoader):
         """Lazy load web pages.
         When use_async is True, this function will not be lazy,
         but it will still work in the expected way, just not lazy."""
-        if self.use_async:
-            results = asyncio.run(self._async_get_child_links_recursive(self.url))
-            if results is None:
-                return iter([])
-            else:
-                return iter(results)
-        else:
+        if not self.use_async:
             return self._get_child_links_recursive(self.url)
+        results = asyncio.run(self._async_get_child_links_recursive(self.url))
+        return iter([]) if results is None else iter(results)
 
     def load(self) -> List[Document]:
         """Load web pages."""

@@ -118,7 +118,7 @@ class Replicate(LLM):
         inputs = {first_input_name: prompt, **self.input}
 
         prediction = replicate_python.predictions.create(
-            version=version, input={**inputs, **kwargs}
+            version=version, input=inputs | kwargs
         )
         current_completion: str = ""
         stop_condition_reached = False

@@ -180,19 +180,18 @@ class KoboldApiLLM(LLM):
         json_response = response.json()
 
         if (
-            "results" in json_response
-            and len(json_response["results"]) > 0
-            and "text" in json_response["results"][0]
+            "results" not in json_response
+            or len(json_response["results"]) <= 0
+            or "text" not in json_response["results"][0]
         ):
-            text = json_response["results"][0]["text"].strip()
-
-            if stop is not None:
-                for sequence in stop:
-                    if text.endswith(sequence):
-                        text = text[: -len(sequence)].rstrip()
-
-            return text
-        else:
             raise ValueError(
                 f"Unexpected response format from Kobold API:  {json_response}"
             )
+        text = json_response["results"][0]["text"].strip()
+
+        if stop is not None:
+            for sequence in stop:
+                if text.endswith(sequence):
+                    text = text[: -len(sequence)].rstrip()
+
+        return text
